@@ -14,6 +14,8 @@ navigator.mediaDevices.getUserMedia({
     .catch(err => console.error(err));
 
 function scan(){
+    showLoader();
+
     const canvas = document.getElementById("snapshot");
     const ctx = canvas.getContext("2d");
 
@@ -38,8 +40,17 @@ function scan(){
                 window.location.href = "/form"
             }else{
                 alert("Scan Failed.");
+                hideLoader();
             }
         })
-        .catch(err => console.error(err));
+        .catch(err => {console.error(err); hideLoader();});
     }, "image/jpeg", 0.9);
+}
+
+function showLoader() {
+    document.getElementById("loader").style.display = "flex";
+}
+
+function hideLoader() {
+    document.getElementById("loader").style.display = "none";
 }

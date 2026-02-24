@@ -3,6 +3,7 @@ body {
     background: #000000;
     margin: 0;
     padding: 0;
+    color: white;
 }
 
 h1 {
@@ -59,4 +60,20 @@ button {
 
 button:hover {
     transform: translateY(-2px);
+}
+
+.form-group {
+    margin-bottom: 10px;
+}
+
+.form-group {
+    margin-bottom: 10px;
+}
+
+.form-group small {
+    display: block;
+    margin-top: -12px;
+    margin-bottom: 10px;
+    color: #aaa;
+    font-size: 13px;
 }

@@ -1,4 +1,23 @@
-from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-import os
+from datetime import datetime
 
+db = SQLAlchemy()
+
+
+class Lead(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    name = db.Column(db.String(150), nullable=False)
+    phone = db.Column(db.String(20))
+    email = db.Column(db.String(150), nullable=False)
+
+    designation = db.Column(db.String(150))
+    company = db.Column(db.String(150))
+    website = db.Column(db.String(150))
+    address = db.Column(db.Text)
+    remarks = db.Column(db.Text)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<Lead {self.name}>"

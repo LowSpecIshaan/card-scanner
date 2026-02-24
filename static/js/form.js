@@ -7,9 +7,10 @@ if (lead) {
     document.getElementById("phone").value = lead.phone || "";
     document.getElementById("email").value = lead.email || "";
     document.getElementById("address").value = lead.address || "";
+    document.getElementById("website").value = lead.website || "";
 }
 
-function update() {
+function save() {
 
     const data = {
         name: document.getElementById("name").value,
@@ -17,7 +18,9 @@ function update() {
         company: document.getElementById("company").value,
         phone: document.getElementById("phone").value,
         email: document.getElementById("email").value,
-        address: document.getElementById("address").value
+        address: document.getElementById("address").value,
+        website: document.getElementById("website").value,
+        remarks: document.getElementById("remarks").value
     };
 
     fetch("/api/save", {
@@ -34,7 +37,7 @@ function update() {
             alert("Lead saved successfully!");
             window.location.href = "/scan";
         } else {
-            alert("Error saving lead");
+            alert(response.error);
         }
 
     })
