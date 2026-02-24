@@ -33,6 +33,7 @@ function scan(){
         .then(res => res.json())
         .then(data => {
             if(data.status === "success"){
+                console.log(data)
                 sessionStorage.setItem("leadData", JSON.stringify(data));
                 window.location.href = "/form"
             }else{

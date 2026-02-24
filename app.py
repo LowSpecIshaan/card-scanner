@@ -35,12 +35,14 @@ def extract_text_from_image(image_bytes):
 
 # Image text parsing
 def parse_business_card(text):
-    import re
-
     lines = [l.strip() for l in text.split("\n") if l.strip()]
 
     email = re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text)
-    phone = re.findall(r"\+?\d[\d\s\-]{8,15}\d", text)
+    phone = re.findall(r"\+?\d[\d\s\-.()]{8,20}\d", text)
+    phone = phone[0] if phone else ""
+    phone = phone.replace(".", "")
+    phone = phone.replace("-", "")
+    phone = phone.strip()
     website = re.findall(r"(?:www\.)?[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text)
 
     website = [w for w in website if "@" not in w]
@@ -67,7 +69,7 @@ def parse_business_card(text):
         "name": name,
         "designation": designation,
         "email": email[0] if email else "",
-        "phone": phone[0] if phone else "",
+        "phone": phone if phone else "",
         "website": website[0] if website else "",
         "address": address
     }
