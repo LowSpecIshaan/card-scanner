@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visiting Card Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/formstyle.css') }}">
+</head>
+<body>
+    <h1>Edit Lead</h1>
+
+    <form id="leadForm" onSubmit="update(); return false;">
+        <input type="text" id="name" placeholder="Name" required><br>
+        <input type="text" id="designation" placeholder="Designation"><br>
+        <input type="text" id="company" placeholder="Company"><br>
+        <input type="text" id="phone" placeholder="Phone"><br>
+        <input type="email" id="email" placeholder="Email" required><br>
+        <input type="text" id="address" placeholder="Address"><br>
+        <input type="text" id="remarks" placeholder="Remarks"><br>
+
+        <button type="submit">Save</button>
+    </form>
+
+    <script src="{{ url_for('static', filename='js/form.js') }}"></script>
+</body>
+</html>

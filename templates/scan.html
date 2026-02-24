@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visiting Card Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/scanstyle.css') }}">
+</head>
+<body>
+    <h1>Scanner</h1>
+
+    <div class="cameraContainer">
+        <video id="camera" autoplay playsinline muted></video>
+    </div>
+
+    <div class="captureButton">
+        <button onclick="scan()">Scan</button>
+    </div>
+
+    <canvas id="snapshot" style="display:none;"></canvas>
+
+    <div class="backButton">
+        <a href="/">
+            <button>Back</button>
+        </a>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
