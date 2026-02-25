@@ -38,24 +38,87 @@ def extract_text_from_image(image_bytes):
     return response.text_annotations[0].description
 
 # Image text parsing
+address_words = {
+    "street", "st", "road", "rd", "lane", "ln",
+    "city", "avenue", "ave", "block", "sector"
+}
+
+designation_keywords = [
+    "manager", "owner", "ceo", "cto", "cfo", "founder",
+    "director", "head", "designer", "advisor", "consultant",
+    "engineer", "developer", "analyst", "marketing",
+    "sales", "executive", "president", "lead", "specialist",
+    "architect", "officer", "administrator"
+]
+
+def looks_like_initials_name(line):
+    return bool(
+        re.match(r"^([A-Z]\.?[\s]*){1,3}[A-Z]{2,}$", line.strip())
+    )
+
+
 def extract_entities(text):
-    doc = nlp(text)
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+
+    address_words = {
+        "street", "st", "road", "rd", "lane", "ln",
+        "city", "nagar", "block", "sector",
+        "behind", "near", "area"
+    }
+
+    designation_words = {
+        "manager", "director", "ceo", "owner",
+        "designer", "engineer", "consultant",
+        "advisor", "founder", "developer"
+    }
+
+    clean_lines = []
+    for line in lines:
+        lower = line.lower()
+
+        if (
+            "@" in line
+            or re.search(r"\d{6,}", line)
+            or "," in line
+            or any(w in lower for w in address_words)
+        ):
+            continue
+
+        clean_lines.append(line)
 
     name = ""
+
+    for line in lines:
+        if looks_like_initials_name(line):
+            name = line.title()
+            break
+
+    if not name:
+        for line in clean_lines:
+            doc = nlp(line)
+            for ent in doc.ents:
+                if ent.label_ == "PERSON":
+                    name = ent.text
+                    break
+            if name:
+                break
+
     company = ""
 
-    for ent in doc.ents:
-        if ent.label_ == "PERSON" and not name:
-            name = ent.text
+    for line in reversed(clean_lines):
+        lower = line.lower()
 
-        elif ent.label_ == "ORG" and not company:
-            company = ent.text
+        if (
+            line.isupper()
+            and len(line) > 3
+            and not any(w in lower for w in designation_words)
+        ):
+            company = line
+            break
 
     return name, company
 
 def parse_business_card(text):
-    import re
-
     lines = [l.strip() for l in text.split("\n") if l.strip()]
 
     clean = re.sub(r"[^A-Za-z ]", "", text)
@@ -67,9 +130,19 @@ def parse_business_card(text):
         text
     )
 
-    phone = re.findall(r"\+?\d[\d\s\-.()]{8,20}\d", text)
-    phone = phone[0] if phone else ""
-    phone = re.sub(r"[^\d+]", "", phone)
+    phone_candidates = []
+
+    for line in text.split("\n"):
+        match = re.search(r"\+?\d[\d\s\-()]{7,}\d", line)
+        if match:
+            phone_candidates.append(match.group())
+
+    phones = [
+        re.sub(r"[^\d+]", "", p)
+        for p in phone_candidates
+    ]
+
+    phone = phones[0] if phones else ""
 
     clean_text = text
     for e in email:
@@ -89,7 +162,7 @@ def parse_business_card(text):
     if not name:
         for line in lines:
             if (
-                "@" not in line
+                "@" not in line and "," not in line and "." not in line
                 and not re.search(r"\d{4,}", line)
                 and 2 <= len(line.split()) <= 3
             ):
@@ -99,8 +172,15 @@ def parse_business_card(text):
     company = company_spacy
 
     designation = ""
+
     for line in lines:
-        if len(line) > 20 and line != name and ',' not in line and '.' not in line and not re.search(r"\d", line):
+        lower_line = line.lower()
+
+        if (
+            line != name
+            and not re.search(r"\d", line)
+            and any(keyword in lower_line for keyword in designation_keywords)
+        ):
             designation = line
             break
 
@@ -134,7 +214,7 @@ def edit_page():
 
 @app.route("/leads")
 def view_leads():
-    leads = Lead.query.order_by(Lead.created_at.desc()).all()
+    leads = Lead.query.order_by(Lead.created_at.asc()).all()
     return render_template("leads.html", leads=leads)
 
 @app.route("/delete/<int:id>")

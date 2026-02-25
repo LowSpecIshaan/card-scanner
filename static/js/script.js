@@ -15,6 +15,7 @@ navigator.mediaDevices.getUserMedia({
 
 function scan(){
     showLoader();
+    video.pause();
 
     const canvas = document.getElementById("snapshot");
     const ctx = canvas.getContext("2d");
@@ -41,9 +42,10 @@ function scan(){
             }else{
                 alert("Scan Failed.");
                 hideLoader();
+                video.play();
             }
         })
-        .catch(err => {console.error(err); hideLoader();});
+        .catch(err => {console.error(err); hideLoader(); video.play();});
     }, "image/jpeg", 0.9);
 }
 
