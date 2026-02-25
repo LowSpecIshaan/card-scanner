@@ -40,7 +40,7 @@ def extract_text_from_image(image_bytes):
 # Image text parsing
 address_words = {
     "street", "st", "road", "rd", "lane", "ln",
-    "city", "avenue", "ave", "block", "sector"
+    "city", "avenue", "ave", "block", "sector", "office", "shop", "no", "number", "floor"
 }
 
 designation_keywords = [
@@ -48,7 +48,7 @@ designation_keywords = [
     "director", "head", "designer", "advisor", "consultant",
     "engineer", "developer", "analyst", "marketing",
     "sales", "executive", "president", "lead", "specialist",
-    "architect", "officer", "administrator"
+    "architect", "officer", "administrator", "advocate", "lawyer", "senior", "surgeon", "accountant"
 ]
 
 def looks_like_initials_name(line):
@@ -59,18 +59,6 @@ def looks_like_initials_name(line):
 
 def extract_entities(text):
     lines = [l.strip() for l in text.split("\n") if l.strip()]
-
-    address_words = {
-        "street", "st", "road", "rd", "lane", "ln",
-        "city", "nagar", "block", "sector",
-        "behind", "near", "area"
-    }
-
-    designation_words = {
-        "manager", "director", "ceo", "owner",
-        "designer", "engineer", "consultant",
-        "advisor", "founder", "developer"
-    }
 
     clean_lines = []
     for line in lines:
@@ -143,6 +131,7 @@ def parse_business_card(text):
     ]
 
     phone = phones[0] if phones else ""
+    phone2 = phones[1] if len(phones) > 1 else ""
 
     clean_text = text
     for e in email:
@@ -184,18 +173,21 @@ def parse_business_card(text):
             designation = line
             break
 
-    address = ""
+    address = []
     for line in lines:
         if "," in line and len(line) > 15:
-            address = line
+            address.append(line)
+
+    address = " ".join(address)
 
     return {
-        "name": name,
+        "name": name.title(),
         "company": company,
         "designation": designation,
-        "email": email[0] if email else "",
+        "email": email[0].lower() if email else "",
         "phone": phone,
-        "website": website[0] if website else "",
+        "phone2": phone2,
+        "website": website[0].lower() if website else "",
         "address": address
     }
 
@@ -216,13 +208,6 @@ def edit_page():
 def view_leads():
     leads = Lead.query.order_by(Lead.created_at.asc()).all()
     return render_template("leads.html", leads=leads)
-
-@app.route("/delete/<int:id>")
-def delete_lead(id):
-    lead = Lead.query.get_or_404(id)
-    db.session.delete(lead)
-    db.session.commit()
-    return redirect("/leads")
 
 # API Routes
 @app.route("/api/scan", methods=["POST"])
@@ -262,7 +247,9 @@ def save():
     lead = Lead(
         name=data.get("name"),
         phone=data.get("phone"),
+        phone2=data.get("phone2"),
         email=data.get("email"),
+        customer_type=data.get("customer_type"),
         designation=data.get("designation"),
         company=data.get("company"),
         website=data.get("website"),
@@ -275,6 +262,12 @@ def save():
 
     return {"status": "saved"}, 200
 
+@app.route("/api/delete/<int:id>")
+def delete_lead(id):
+    lead = Lead.query.get_or_404(id)
+    db.session.delete(lead)
+    db.session.commit()
+    return redirect("/leads")
 
 # Run App
 if __name__ == "__main__":

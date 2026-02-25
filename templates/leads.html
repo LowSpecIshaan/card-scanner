@@ -7,47 +7,63 @@
 </head>
 <body>
 
-<h1>All Leads</h1>
-<div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th>S.No</th>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>Designation</th>
-                <th>Company</th>
-                <th>Website</th>
-                <th>Address</th>
-                <th>Remarks</th>
-                <th>Created</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for lead in leads %}
-            <tr>
-                <td>{{ loop.index }}</td>
-                <td>{{ lead.name }}</td>
-                <td>{{ lead.phone }}</td>
-                <td>{{ lead.email }}</td>
-                <td>{{ lead.designation }}</td>
-                <td>{{ lead.company }}</td>
-                <td>{{ lead.website }}</td>
-                <td>{{ lead.address }}</td>
-                <td>{{ lead.remarks }}</td>
-                <td>{{ lead.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
-                <td>
-                    <a href="/delete/{{ lead.id }}"
-                        onclick="return confirm('Are you sure you want to delete this lead?')">
-                        Delete
-                    </a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    <h1>All Leads</h1>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>S.No</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Phone 2</th>
+                    <th>Email</th>
+                    <th>Customer Type</th>
+                    <th>Designation</th>
+                    <th>Company</th>
+                    <th>Website</th>
+                    <th>Address</th>
+                    <th>Remarks</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lead in leads %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ lead.name }}</td>
+                    <td>{{ lead.phone }}</td>
+                    <td>{{ lead.phone2 }}</td>
+                    <td>{{ lead.email }}</td>
+                    <td>{{ lead.customer_type }}</td>
+                    <td>{{ lead.designation }}</td>
+                    <td>{{ lead.company }}</td>
+                    <td>{{ lead.website }}</td>
+                    <td>{{ lead.address }}</td>
+                    <td>{{ lead.remarks }}</td>
+                    <td>{{ lead.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                    <td>
+                        <button
+                            style="color:#59c5ff; text-decoration:none; background:#ffffff00; border:none; padding:0;"
+                            onclick="">
+                            Edit
+                        </button>
+                        |
+                        <a href="/api/delete/{{ lead.id }}"
+                            onclick="return confirm('Are you sure you want to delete this lead?')">
+                            Delete
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="backButton">
+        <a href="/">
+            <button>Home</button>
+        </a>
+    </div>
 
 </body>
 </html>

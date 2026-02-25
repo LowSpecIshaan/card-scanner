@@ -7,13 +7,14 @@ body {
 }
 
 h1 {
+    font-size: 40px;
     text-align: center;
     margin-bottom: 20px;
 }
 
 .table-container {
     width: 100%;
-    height: 80vh;    
+    height: 60vh;    
     overflow: auto;        
     border-radius: 12px;
     border: 1px solid #222;
@@ -62,6 +63,9 @@ a {
 }
 
 @media (max-width: 768px) {
+    h1{
+        font-size: 100px;
+    }
 
     th,
     td {
@@ -80,4 +84,33 @@ a {
     a {
         font-size: 18px;
     }
+}
+
+.backButton {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    max-width: 250px;
+
+    text-align: center;
+    margin: 20px auto;
+    margin-top: 40px;
+}
+
+.backButton a{
+    width: 100%;
+}
+
+.backButton button {
+    background-color: #ff5050;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 25px;
+    font-size: 20px;
+    cursor: pointer;
+    width: 100%;
+    transition: 0.3s ease;
 }

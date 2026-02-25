@@ -17,13 +17,38 @@
         </div>
 
         <div class="form-group">
+            <small>Email*</small>
+            <input type="email" id="email" required placeholder="Please Fill Manually">
+        </div>
+
+        <div class="form-group">
             <small>Phone</small>
             <input type="text" id="phone" placeholder="Please Fill Manually (Optional)">
         </div>
 
         <div class="form-group">
-            <small>Email*</small>
-            <input type="email" id="email" required placeholder="Please Fill Manually">
+            <small>Phone 2</small>
+            <input type="text" id="phone2" placeholder="Please Fill Manually (Optional)">
+        </div>
+
+        <div class="form-group">
+            <small>Customer Type</small>
+            <select id="customerType" onchange="toggleOtherCustomer()" class="dropdown">
+                <option value="">Select Customer Type</option>
+                <option>Architect / Interior Designer</option>
+                <option>Builder / Project</option>
+                <option>Distributor / Trader</option>
+                <option>Hospitality</option>
+                <option>Offices / Commercial</option>
+                <option>Showroom / Retail Brand</option>
+                <option>Exhibitor</option>
+                <option value="Others">Others</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="otherCustomerDiv" style="display:none;">
+            <small>Please Specify Customer Type*</small>
+            <input type="text" id="otherCustomerType" placeholder="Enter customer type">
         </div>
 
         <div class="form-group">
