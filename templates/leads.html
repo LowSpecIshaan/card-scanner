@@ -45,7 +45,7 @@
                     <td>
                         <button
                             style="color:#59c5ff; text-decoration:none; background:#ffffff00; border:none; padding:0;"
-                            onclick="">
+                            onclick="edit('{{ lead.id }}')">
                             Edit
                         </button>
                         |
@@ -64,6 +64,6 @@
             <button>Home</button>
         </a>
     </div>
-
+    <script src="{{ url_for('static', filename='js/leads.js') }}"></script>
 </body>
 </html>

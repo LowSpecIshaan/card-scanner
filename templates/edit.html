@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visiting Card Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/formstyle.css') }}">
+</head>
+<body data-id="{{ id }}">
+    <h1>Edit Lead</h1>
+
+    <form id="leadForm" onSubmit="save(); return false;">
+        <div class="form-group">
+            <small>Name*</small>
+            <input type="text" id="name" required placeholder="Please Fill Manually">
+        </div>
+
+        <div class="form-group">
+            <small>Email*</small>
+            <input type="email" id="email" required placeholder="Please Fill Manually">
+        </div>
+
+        <div class="form-group">
+            <small>Phone</small>
+            <input type="text" id="phone" placeholder="Please Fill Manually (Optional)">
+        </div>
+
+        <div class="form-group">
+            <small>Phone 2</small>
+            <input type="text" id="phone2" placeholder="Please Fill Manually (Optional)">
+        </div>
+
+        <div class="form-group">
+            <small>Customer Type</small>
+            <select id="customerType" onchange="toggleOtherCustomer()" class="dropdown">
+                <option value="">Select Customer Type</option>
+                <option>Architect / Interior Designer</option>
+                <option>Builder / Project</option>
+                <option>Distributor / Trader</option>
+                <option>Hospitality</option>
+                <option>Offices / Commercial</option>
+                <option>Showroom / Retail Brand</option>
+                <option>Exhibitor</option>
+                <option value="Others">Others</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="otherCustomerDiv" style="display:none;">
+            <small>Please Specify Customer Type*</small>
+            <input type="text" id="otherCustomerType" placeholder="Enter customer type">
+        </div>
+
+        <div class="form-group">
+            <small>Designation</small>
+            <input type="text" id="designation" placeholder="Please Fill Manually (Optional)">
+        </div>
+
+        <div class="form-group">
+            <small>Company</small>
+            <input type="text" id="company" placeholder="Please Fill Manually (Optional)">
+        </div>
+
+        <div class="form-group">
+            <small>Website</small>
+            <input type="text" id="website" placeholder="Please Fill Manually (Optional)">
+        </div>
+
+        <div class="form-group">
+            <small>Address</small>
+            <input type="text" id="address" placeholder="Please Fill Manually (Optional)">
+        </div>
+
+        <div class="form-group">
+            <small>Remarks</small>
+            <input type="text" id="remarks" placeholder="Please Fill Manually (Optional)">
+        </div>
+
+        <center><div class="disclaimer" style="color: #ff6b6b; max-width: 300px; margin-bottom: 20px">
+        <small>Autofilled details may be inaccurate, please recheck before saving.</small>
+    </div></center>
+
+        <button type="submit">Save</button>
+    </form>
+
+    <script src="{{ url_for('static', filename='js/edit.js') }}"></script>
+</body>
+</html>

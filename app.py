@@ -107,6 +107,7 @@ def extract_entities(text):
     return name, company
 
 def parse_business_card(text):
+    print(text)
     lines = [l.strip() for l in text.split("\n") if l.strip()]
 
     clean = re.sub(r"[^A-Za-z ]", "", text)
@@ -121,7 +122,7 @@ def parse_business_card(text):
     phone_candidates = []
 
     for line in text.split("\n"):
-        match = re.search(r"\+?\d[\d\s\-()]{7,}\d", line)
+        match = re.search(r"\+?\d[\d\s\-().]{7,}\d", line)
         if match:
             phone_candidates.append(match.group())
 
@@ -201,13 +202,17 @@ def scan_page():
     return render_template("scan.html")
 
 @app.route("/form")
-def edit_page():
+def form_page():
     return render_template("form.html")
 
 @app.route("/leads")
 def view_leads():
     leads = Lead.query.order_by(Lead.created_at.asc()).all()
     return render_template("leads.html", leads=leads)
+
+@app.route("/edit/<int:id>")
+def edit_page(id):
+    return render_template("edit.html", id=id)
 
 # API Routes
 @app.route("/api/scan", methods=["POST"])
@@ -258,6 +263,43 @@ def save():
     )
 
     db.session.add(lead)
+    db.session.commit()
+
+    return {"status": "saved"}, 200
+
+@app.route("/api/get/<int:id>")
+def get_lead(id):
+    lead = Lead.query.get_or_404(id)
+    return jsonify({
+        "name": lead.name,
+        "phone": lead.phone,
+        "phone2": lead.phone2,
+        "email": lead.email,
+        "customer_type": lead.customer_type,
+        "designation": lead.designation,
+        "company": lead.company,
+        "website": lead.website,
+        "address": lead.address,
+        "remarks": lead.remarks,
+    })
+
+@app.route("/api/update/<int:id>", methods=["PUT"])
+def update_lead(id):
+    data = request.get_json()
+
+    lead = Lead.query.get_or_404(id)
+
+    lead.name = data.get("name")
+    lead.phone = data.get("phone")
+    lead.phone2 = data.get("phone2")
+    lead.email = data.get("email")
+    lead.customer_type = data.get("customer_type")
+    lead.designation = data.get("designation")
+    lead.website = data.get("website")
+    lead.address = data.get("address")
+    lead.company = data.get("company")
+    lead.remarks = data.get("remarks")
+
     db.session.commit()
 
     return {"status": "saved"}, 200
