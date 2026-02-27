@@ -2,14 +2,10 @@ from flask import Flask, render_template, request, jsonify, redirect
 from flask_sqlalchemy import SQLAlchemy
 import os
 from dotenv import load_dotenv
-# from google.cloud import vision
 from google.cloud import vision_v1
 import uuid
 import re
-# import spacy
 from models import db, Lead
-
-# nlp = spacy.load("en_core_web_sm")
 
 load_dotenv()
 
@@ -30,8 +26,6 @@ from google.oauth2 import service_account
 credentials_info = json.loads(os.environ.get("GOOGLE_CREDENTIALS_JSON"))
 credentials = service_account.Credentials.from_service_account_info(credentials_info)
 
-# client = vision.ImageAnnotatorClient(credentials=credentials)
-
 client = vision_v1.ImageAnnotatorClient(
     credentials=credentials,
     transport="rest"
@@ -40,7 +34,6 @@ client = vision_v1.ImageAnnotatorClient(
 # Image text Extraction
 def extract_text_from_image(image_bytes):
     image = vision_v1.Image(content=image_bytes)
-    # response = client.document_text_detection(image=image)
     response = client.document_text_detection(
         image=image,
         timeout=20
@@ -79,56 +72,6 @@ def looks_like_initials_name(line):
     return bool(
         re.match(r"^([A-Z]\.?[\s]*){1,3}[A-Z]{2,}$", line.strip())
     )
-
-
-# def extract_entities(text):
-#     lines = [l.strip() for l in text.split("\n") if l.strip()]
-
-#     clean_lines = []
-#     for line in lines:
-#         lower = line.lower()
-
-#         if (
-#             "@" in line
-#             or re.search(r"\d{6,}", line)
-#             or "," in line
-#             or any(w in lower for w in address_words)
-#         ):
-#             continue
-
-#         clean_lines.append(line)
-
-#     name = ""
-
-#     for line in lines:
-#         if looks_like_initials_name(line):
-#             name = line.title()
-#             break
-
-#     if not name:
-#         for line in clean_lines:
-#             doc = nlp(line)
-#             for ent in doc.ents:
-#                 if ent.label_ == "PERSON":
-#                     name = ent.text
-#                     break
-#             if name:
-#                 break
-
-#     company = ""
-
-#     for line in reversed(clean_lines):
-#         lower = line.lower()
-
-#         if (
-#             line.isupper()
-#             and len(line) > 3
-#             and not any(w in lower for w in designation_words)
-#         ):
-#             company = line
-#             break
-
-#     return name, company
 
 def extract_entities(text):
     lines = [l.strip() for l in text.split("\n") if l.strip()]
@@ -183,10 +126,6 @@ def parse_business_card(text):
     print(text)
     lines = [l.strip() for l in text.split("\n") if l.strip()]
 
-    # clean = re.sub(r"[^A-Za-z ]", "", text)
-
-    # name_spacy, company_spacy = extract_entities(clean)
-
     name_detected, company_detected = extract_entities(text)
 
     email = re.findall(
@@ -223,7 +162,6 @@ def parse_business_card(text):
         if "@" not in w and " " not in w
     ]
 
-    # name = name_spacy
     name = name_detected
 
     if not name:
@@ -236,7 +174,6 @@ def parse_business_card(text):
                 name = line
                 break
 
-    # company = company_spacy
     company = company_detected
 
     designation = ""
@@ -395,4 +332,4 @@ def delete_lead(id):
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(host="0.0.0.0", port=5000)
+    app.run()
