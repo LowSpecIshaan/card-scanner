@@ -15,14 +15,21 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 
-app.config["SECRET_KEY"] = "dev-secret-key"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///leads.db"
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Initialize DB
 db.init_app(app)
 
-client = vision.ImageAnnotatorClient()
+# Google API
+import json
+from google.oauth2 import service_account
+
+credentials_info = json.loads(os.environ.get("GOOGLE_CREDENTIALS_JSON"))
+credentials = service_account.Credentials.from_service_account_info(credentials_info)
+
+client = vision.ImageAnnotatorClient(credentials=credentials)
 
 # Image text Extraction
 def extract_text_from_image(image_bytes):
@@ -315,4 +322,4 @@ def delete_lead(id):
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run()
