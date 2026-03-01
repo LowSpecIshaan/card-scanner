@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 
 db = SQLAlchemy()
 
+def ist():
+    return datetime.utcnow() + timedelta(hours=5, minutes=30)
 
 class Lead(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -19,7 +21,7 @@ class Lead(db.Model):
     address = db.Column(db.Text)
     remarks = db.Column(db.Text)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow() + timedelta(hours=5, minutes=30))
+    created_at = db.Column(db.DateTime, default=ist)
 
     def __repr__(self):
         return f"<Lead {self.name}>"
