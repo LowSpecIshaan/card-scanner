@@ -50,10 +50,16 @@
                             Edit
                         </button>
                         |
-                        <a href="/api/delete/{{ lead.id }}"
-                            onclick="return confirm('Are you sure you want to delete this lead?')">
-                            Delete
-                        </a>
+                        <form method="POST"
+                            action="/api/delete/{{ lead.id }}"
+                            style="display:inline;"
+                            onsubmit="return confirm('Are you sure you want to delete this lead?')">
+
+                            <button type="submit"
+                                    style="color:#ff8080; background:none; border:none; padding:0; cursor:pointer;">
+                                Delete
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}

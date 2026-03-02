@@ -222,7 +222,7 @@ def form_page():
 
 @app.route("/leads")
 def view_leads():
-    leads = Lead.query.order_by(Lead.created_at.asc()).all()
+    leads = Lead.query.filter_by(is_deleted = False).order_by(Lead.created_at.asc()).all()
     return render_template("leads.html", leads=leads)
 
 @app.route("/edit/<int:id>")
@@ -264,7 +264,22 @@ def save():
 
     existing = Lead.query.filter_by(email=data.get("email")).first()
     if existing:
-        return {"error": "Email already exists"}, 400
+        if existing.is_deleted==False:
+            return {"error": "Email already exists"}, 400
+        else:
+            existing.is_deleted = False
+            existing.name = data.get("name")
+            existing.phone = data.get("phone")
+            existing.phone2 = data.get("phone2")
+            existing.customer_type = data.get("customer_type")
+            existing.designation = data.get("designation")
+            existing.company = data.get("company")
+            existing.website = data.get("website")
+            existing.address = data.get("address")
+            existing.remarks = data.get("remarks")
+
+            db.session.commit()
+            return {"status": "saved"}, 200
     
     lead = Lead(
         name=data.get("name"),
@@ -321,12 +336,17 @@ def update_lead(id):
 
     return {"status": "saved"}, 200
 
-@app.route("/api/delete/<int:id>")
+@app.route("/api/delete/<int:id>", methods=["POST"])
 def delete_lead(id):
     lead = Lead.query.get_or_404(id)
-    db.session.delete(lead)
+    lead.is_deleted = True
     db.session.commit()
     return redirect("/leads")
+
+# Robot Safety
+@app.route("/robots.txt")
+def robots():
+    return "User-agent: *\nDisallow: /api/\n", 200, {"Content-Type": "text/plain"}
 
 # Run App
 if __name__ == "__main__":

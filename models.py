@@ -23,5 +23,7 @@ class Lead(db.Model):
 
     created_at = db.Column(db.DateTime, default=ist)
 
+    is_deleted = db.Column(db.Boolean, default=False)
+
     def __repr__(self):
         return f"<Lead {self.name}>"
