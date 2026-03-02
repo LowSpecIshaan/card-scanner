@@ -86,6 +86,20 @@ a {
     }
 }
 
+.excelButton {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    max-width: 250px;
+
+    text-align: center;
+    margin: 20px auto;
+    margin-top: 40px;
+}
+
 .backButton {
     display: flex;
     flex-direction: column;
@@ -100,8 +114,23 @@ a {
     margin-top: 40px;
 }
 
+.excelButton a{
+    width: 100%;
+}
+
 .backButton a{
     width: 100%;
+}
+
+.excelButton button {
+    background-color: #6bf5ff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 25px;
+    font-size: 20px;
+    cursor: pointer;
+    width: 100%;
+    transition: 0.3s ease;
 }
 
 .backButton button {

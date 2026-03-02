@@ -45,7 +45,7 @@
                     <td>{{ lead.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
                     <td>
                         <button
-                            style="color:#59c5ff; text-decoration:none; background:#ffffff00; border:none; padding:0;"
+                            style="color:#59c5ff; text-decoration:none; background:#ffffff00; border:none; padding:0; cursor: pointer;"
                             onclick="edit('{{ lead.id }}')">
                             Edit
                         </button>
@@ -65,6 +65,11 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+    <div class="excelButton">
+        <a href="/api/to-excel">
+            <button>Export to Excel</button>
+        </a>
     </div>
     <div class="backButton">
         <a href="/">

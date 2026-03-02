@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visiting Card Scanner</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/IshaanLogo.png') }}" type="image/png">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body>
+
+    <div class="startButton">
+        <h1>Login</h1>
+
+        <form id="leadForm" onsubmit="login(); return false;">
+            
+            <div class="form-group">
+                <small>Company ID</small>
+                <input type="text" id="id" required placeholder="Enter Company ID">
+            </div>
+
+            <div class="form-group">
+                <small>Password</small>
+                <div style="position: relative;">
+                    <input type="password" id="password" required placeholder="Enter Password">
+                </div>
+            </div>
+            <button type="button" onclick="togglePassword()" style="background-color: #96faff">
+                Show Password
+            </button>
+
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <footer class="footer">
+        Developed by 
+        <a href="https://ishaanguptaportfolio.netlify.app/" target="_blank">
+            <strong>Ishaan Gupta</strong>
+        </a>
+    </footer>
+    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+</body>
+</html>

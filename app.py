@@ -1,20 +1,54 @@
-from flask import Flask, render_template, request, jsonify, redirect
+from flask import Flask, render_template, request, jsonify, redirect, send_file
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+import io
 from flask_sqlalchemy import SQLAlchemy
 import os
 from dotenv import load_dotenv
 from google.cloud import vision_v1
 import uuid
 import re
-from models import db, Lead
+from models import db, Lead, User
+import pandas as pd
 
 load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login_page"
+
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Auth
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+@app.route("/login")
+def login_page():
+    return render_template("login.html")
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.get_json()
+
+    user = User.query.filter_by(name=data["id"]).first()
+
+    if not user or not user.check_password(data["password"]):
+        return {"error": "Invalid credentials"}, 401
+
+    login_user(user)
+    return {"status": "logged_in"}, 200
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return {"status": "logged_out"}, 200
 
 # Initialize DB
 db.init_app(app)
@@ -209,28 +243,39 @@ def parse_business_card(text):
 
 # Frontend Routes
 @app.route('/')
+@login_required
 def home():
     return render_template("index.html")
 
 @app.route('/scan')
+@login_required
 def scan_page():
     return render_template("scan.html")
 
 @app.route("/form")
+@login_required
 def form_page():
     return render_template("form.html")
 
 @app.route("/leads")
+@login_required
 def view_leads():
-    leads = Lead.query.filter_by(is_deleted = False).order_by(Lead.created_at.asc()).all()
+    leads = Lead.query.filter_by(is_deleted = False, user_id=current_user.id).order_by(Lead.created_at.asc()).all()
     return render_template("leads.html", leads=leads)
 
 @app.route("/edit/<int:id>")
+@login_required
 def edit_page(id):
     return render_template("edit.html", id=id)
 
+@app.route("/admin/create-user")
+@login_required
+def create_user_page():
+    return render_template("create-user.html")
+
 # API Routes
 @app.route("/api/scan", methods=["POST"])
+@login_required
 def scan_card():
     image = request.files.get("image")
 
@@ -256,13 +301,14 @@ def scan_card():
         }), 500
 
 @app.route("/api/save", methods=["POST"])
+@login_required
 def save():
     data = request.get_json()
 
     if not data:
         return {"error": "Bad request"}, 400
 
-    existing = Lead.query.filter_by(email=data.get("email")).first()
+    existing = Lead.query.filter_by(email=data.get("email"), user_id=current_user.id).first()
     if existing:
         if existing.is_deleted==False:
             return {"error": "Email already exists"}, 400
@@ -291,7 +337,8 @@ def save():
         company=data.get("company"),
         website=data.get("website"),
         address=data.get("address"),
-        remarks=data.get("remarks")
+        remarks=data.get("remarks"),
+        user_id=current_user.id,
     )
 
     db.session.add(lead)
@@ -300,8 +347,9 @@ def save():
     return {"status": "saved"}, 200
 
 @app.route("/api/get/<int:id>")
+@login_required
 def get_lead(id):
-    lead = Lead.query.get_or_404(id)
+    lead = Lead.query.filter_by(id=id, user_id=current_user.id).first_or_404()
     return jsonify({
         "name": lead.name,
         "phone": lead.phone,
@@ -316,10 +364,11 @@ def get_lead(id):
     })
 
 @app.route("/api/update/<int:id>", methods=["PUT"])
+@login_required
 def update_lead(id):
     data = request.get_json()
 
-    lead = Lead.query.get_or_404(id)
+    lead = Lead.query.filter_by(id=id, user_id=current_user.id).first_or_404()
 
     lead.name = data.get("name")
     lead.phone = data.get("phone")
@@ -336,12 +385,65 @@ def update_lead(id):
 
     return {"status": "saved"}, 200
 
+@app.route("/api/to-excel")
+@login_required
+def excel():
+    leads = Lead.query.filter_by(is_deleted=False, user_id=current_user.id).all()
+    data_list = []
+
+    for lead in leads:
+        dic = {
+            "name": lead.name,
+            "phone": lead.phone,
+            "phone2": lead.phone2,
+            "email": lead.email,
+            "customer_type": lead.customer_type,
+            "designation": lead.designation,
+            "company": lead.company,
+            "website": lead.website,
+            "address": lead.address,
+            "remarks": lead.remarks,
+        }
+        data_list.append(dic)
+    
+    df = pd.DataFrame(data_list)
+
+    output = io.BytesIO()
+    df.to_excel(output, index=False)
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="leads.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+
 @app.route("/api/delete/<int:id>", methods=["POST"])
+@login_required
 def delete_lead(id):
-    lead = Lead.query.get_or_404(id)
+    lead = Lead.query.filter_by(id=id, user_id=current_user.id).first_or_404()
     lead.is_deleted = True
     db.session.commit()
     return redirect("/leads")
+
+@app.route("/api/admin/create-user", methods=["POST"])
+@login_required
+def create_user():
+    data = request.get_json()
+    password = data.get("password")
+
+    if not password:
+        return {"error": "Password required"}, 400
+
+    new_user = User()
+    new_user.set_password(password)
+
+    db.session.add(new_user)
+    db.session.commit()
+
+    return {"user_id": new_user.name}, 200
 
 # Robot Safety
 @app.route("/robots.txt")
@@ -352,4 +454,4 @@ def robots():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run()
+    app.run(host="0.0.0.0", port=5000, debug=True)

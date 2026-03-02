@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create User</title>
+</head>
+<body>
+
+<h2>Create New User</h2>
+
+<form id="createUserForm" onsubmit="createUser(); return false;">
+    <label>Password:</label><br>
+    <input type="password" id="password" required><br><br>
+
+    <button type="submit">Create User</button>
+</form>
+
+<p id="result"></p>
+
+<script>
+function createUser() {
+    const password = document.getElementById("password").value;
+
+    fetch("/api/admin/create-user", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ password: password })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.user_id) {
+            document.getElementById("result").innerText =
+                "User created. ID: " + data.user_id;
+        } else {
+            document.getElementById("result").innerText =
+                data.error || "Error creating user";
+        }
+    });
+}
+</script>
+
+</body>
+</html>
