@@ -1,9 +1,10 @@
 body {
-    font-family: 'Roboto', sans-serif;
-    background: #111;
     color: white;
     padding: 20px;
     margin: 0;
+    background: linear-gradient(135deg, #0f2027, #170e29, #19002b);
+    font-family: 'Ubuntu', sans-serif;
+    height: 100vh;
 }
 
 h1 {
@@ -17,7 +18,7 @@ h1 {
     height: 60vh;    
     overflow: auto;        
     border-radius: 12px;
-    border: 1px solid #222;
+    border: 2px solid #ffffff5f;
 }
 
 table {
@@ -38,12 +39,16 @@ td {
 thead th {
     position: sticky;
     top: 0;
-    background: #222;
+    background: #131313;
     z-index: 2;
 }
 
+tr:nth-child(odd) {
+    background: #1a1a1a4b;
+}
+
 tr:nth-child(even) {
-    background: #1a1a1a;
+    background: #1a1a1a9d;
 }
 
 a {
@@ -53,24 +58,24 @@ a {
 }
 
 .table-container::-webkit-scrollbar {
-    height: 8px;
-    width: 8px;
+    height: 4px;
+    width: 4px;
 }
 
 .table-container::-webkit-scrollbar-thumb {
-    background: #444;
+    background: #d7d7d783;
     border-radius: 10px;
 }
 
 @media (max-width: 768px) {
     h1{
-        font-size: 100px;
+        font-size: 40px;
     }
 
     th,
     td {
-        font-size: 18px;
-        padding: 16px 18px;
+        font-size: 12px;
+        padding: 10px 9px;
     }
 
     table {
@@ -81,8 +86,13 @@ a {
         padding: 10px;
     }
 
-    a {
-        font-size: 18px;
+    button {
+        font-size: 12px;
+    }
+
+    .table-container::-webkit-scrollbar {
+        height: 0px;
+        width: 0px;
     }
 }
 
@@ -111,7 +121,7 @@ a {
 
     text-align: center;
     margin: 20px auto;
-    margin-top: 40px;
+    margin-top: 20px;
 }
 
 .excelButton a{
@@ -123,10 +133,11 @@ a {
 }
 
 .excelButton button {
-    background-color: #6bf5ff;
+    font-family: "Rubik", sans-serif;
+    background-color: #ffffff;
     border: none;
     border-radius: 10px;
-    padding: 12px 25px;
+    padding: 12px 20px;
     font-size: 20px;
     cursor: pointer;
     width: 100%;
@@ -134,10 +145,11 @@ a {
 }
 
 .backButton button {
-    background-color: #93ff6b;
+    font-family: "Rubik", sans-serif;
+    background-color: #ffffff;
     border: none;
     border-radius: 10px;
-    padding: 12px 25px;
+    padding: 12px 20px;
     font-size: 20px;
     cursor: pointer;
     width: 100%;

@@ -1,28 +1,15 @@
 body {
     margin: 0;
-    font-family: 'Roboto', sans-serif;
-    background: #000000;
-    background-image:
-        linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
-    background-size: 40px 40px;
-    animation: gridMove 2s linear infinite;
+    background: linear-gradient(135deg, #0f2027, #170e29, #19002b);
+    font-family: 'Ubuntu', sans-serif;
     text-align: center;
     color: white;
-}
-
-@keyframes gridMove {
-    from {
-        background-position: 0 0, 0 0;
-    }
-
-    to {
-        background-position: 0 40px, 0 40px;
-    }
+    height: 100vh;
 }
 
 h1 {
     margin-top: 20px;
+    font-size: 40px;
 }
 
 .cameraContainer {
@@ -53,7 +40,8 @@ video {
 }
 
 .captureButton button {
-    background-color: #ffea00;
+    font-family: 'Rubik', sans-serif;
+    background-color: #ffffff;
     border: none;
     border-radius: 10px;
     padding: 12px 25px;
@@ -81,7 +69,8 @@ video {
 }
 
 .backButton button {
-    background-color: #93ff6b;
+    font-family: 'Rubik', sans-serif;
+    background-color: #ffffff;
     border: none;
     border-radius: 10px;
     padding: 12px 25px;

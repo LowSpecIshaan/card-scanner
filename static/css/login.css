@@ -4,22 +4,8 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #000000;
-    background-image:
-        linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
-    background-size: 40px 40px;
-    animation: gridMove 2s linear infinite;
-    font-family: 'Roboto', sans-serif;
-}
-
-@keyframes gridMove {
-    from {
-        background-position: 0 0, 0 0;
-    }
-    to {
-        background-position: 0 40px, 0 40px;
-    }
+    background: linear-gradient(135deg, #0f2027, #170e29, #19002b);
+    font-family: 'Ubuntu', sans-serif;
 }
 
 .startButton {
@@ -31,15 +17,17 @@ body {
     width: 60%;
     max-width: 250px;
     padding: 30px;
+    padding-top: 10px;
     padding-bottom: 40px;
     border-radius: 20px;
-    border: 1px solid white;
-    background-color: #151515;
+    border: 2px solid rgba(255, 255, 255, 0.547);
+    background-color: #31313161;
     box-shadow: 0 10px 25px rgba(255, 255, 255, 0.045);
     text-align: center;
 }
 
 .startButton h1 {
+    font-size: 40px;
     width: 100%;
     margin-bottom: 20px;
     color: white;
@@ -62,11 +50,12 @@ form {
 }
 
 input {
+    font-family: "Ubuntu", sans-serif;
     width: 87%;
     padding: 12px 15px;
     border-radius: 10px;
     border: 1px solid #ddd;
-    background-color: rgb(32, 32, 32);
+    background-color: rgba(32, 32, 32, 0.592);
     color: white;
     font-size: 16px;
     transition: 0.2s;
@@ -74,12 +63,13 @@ input {
 
 input:focus {
     outline: none;
-    border-color: #ffea00;
+    border-color: #83e8ff;
 }
 
 .startButton button {
+    font-family: "Rubik", sans-serif;
     margin-top: 10px;
-    background-color: #ffea00;
+    background-color: #ffffff;
     border: none;
     border-radius: 10px;
     padding: 12px 25px;
