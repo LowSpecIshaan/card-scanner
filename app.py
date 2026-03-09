@@ -82,11 +82,6 @@ def extract_text_from_image(image_bytes):
     return response.text_annotations[0].description
 
 # Image text parsing
-address_words = {
-    "street", "st", "road", "rd", "lane", "ln",
-    "city", "avenue", "ave", "block", "sector", "office", "shop", "no", "number", "floor"
-}
-
 designation_keywords = [
     "manager", "owner", "ceo", "cto", "cfo", "founder",
     "director", "head", "designer", "advisor", "consultant",
@@ -96,16 +91,29 @@ designation_keywords = [
 ]
 
 company_keywords = [
-    "technologies", "technology", "solutions", "systems",
+    "technologies", "solutions", "systems",
     "pvt", "ltd", "private", "limited", "corp",
     "corporation", "inc", "llp", "group",
-    "industries", "services", "consulting", "graphics", "llc", "india"
+    "industries", "services", "consulting", "llc", "india",
+    "doors", "wood", "enterprise", "sons", "lab", 
+    "decor", "kitchen", "hardware", "decorators", "l&c", "studio", "designers", 
+    "interior", "company", "co", "associates", "agency", "traders", "exports", "imports",
+    "builders", "construction", "family", "media", "digital",
+    "engineering", "enterprises", "global", "international", "transport", "designs", "rubber", "polymer",
+    "furniture", "plastic", "silicon", "steel", "paper", "polymer", "silk", "agencies", "media", "ware", 
+    "ceramics", "industry", "insurance", "bharat"
 ]
 
 def looks_like_initials_name(line):
-    return bool(
-        re.match(r"^([A-Z]\.?[\s]*){1,3}[A-Z]{2,}$", line.strip())
-    )
+    line = line.strip()
+
+    if re.match(r"^([A-Z]\.? ){1,3}[A-Z][a-z]+$", line):
+        return True
+
+    if re.match(r"^[A-Z]{2,}\s[A-Z]{2,}$", line):
+        return True
+
+    return False
 
 def extract_entities(text):
     lines = [l.strip() for l in text.split("\n") if l.strip()]
@@ -116,37 +124,27 @@ def extract_entities(text):
 
         if (
             "@" in line
-            or re.search(r"\d{6,}", line)
+            or re.search(r"\+?\d[\d\s\-().]{7,}\d", line)
             or "," in line
-            or any(w in lower for w in address_words)
-        ):
+            or re.search(r"(?:https?://)?(?:www\.)?[A-Za-z0-9-]+\.[A-Za-z]{2,}(?:\.[A-Za-z]{2,})?", line)
+        ):  
             continue
 
         clean_lines.append(line)
 
-    company = ""
-    for line in clean_lines:
-        if any(keyword in line.lower() for keyword in company_keywords):
-            company = line
-            break
-
-    if not company:
-        for line in clean_lines:
-            if line.isupper() and len(line.split()) >= 2:
-                company = line
-                break
-
     name = ""
 
     for line in clean_lines:
-        if looks_like_initials_name(line):
+        if (looks_like_initials_name(line)
+            and not any(k in line.lower() for k in company_keywords) 
+            and not any(k in line.lower() for k in designation_keywords)
+        ):
             name = line.title()
             break
 
     if not name:
         for line in clean_lines[:5]:
-            if (
-                line != company
+            if (not any(k in line.lower() for k in company_keywords) 
                 and not any(k in line.lower() for k in designation_keywords)
                 and 2 <= len(line.split()) <= 3
                 and line.replace(" ", "").isalpha()
@@ -154,13 +152,24 @@ def extract_entities(text):
                 name = line.title()
                 break
 
+    company = ""
+    for line in clean_lines:
+        if any(keyword in line.lower() for keyword in company_keywords):
+            company = line.title()
+            break
+
+    if not company:
+        for line in clean_lines:
+            if not any(k in line.lower() for k in designation_keywords) and 1 <= len(line.split()) <= 4 and line.title() != name:
+                company = line.title()
+                break
+
     return name, company
 
 def parse_business_card(text):
-    print(text)
     lines = [l.strip() for l in text.split("\n") if l.strip()]
 
-    name_detected, company_detected = extract_entities(text)
+    name, company = extract_entities(text)
 
     email = re.findall(
         r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
@@ -196,20 +205,6 @@ def parse_business_card(text):
         if "@" not in w and " " not in w
     ]
 
-    name = name_detected
-
-    if not name:
-        for line in lines:
-            if (
-                "@" not in line and "," not in line and "." not in line
-                and not re.search(r"\d{4,}", line)
-                and 2 <= len(line.split()) <= 3
-            ):
-                name = line
-                break
-
-    company = company_detected
-
     designation = ""
 
     for line in lines:
@@ -230,8 +225,8 @@ def parse_business_card(text):
 
     address = " ".join(address)
 
-    return {
-        "name": name.title(),
+    return_dict = {
+        "name": name,
         "company": company,
         "designation": designation,
         "email": email[0].lower() if email else "",
@@ -240,6 +235,8 @@ def parse_business_card(text):
         "website": website[0].lower() if website else "",
         "address": address
     }
+
+    return return_dict
 
 # Frontend Routes
 @app.route('/')
