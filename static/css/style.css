@@ -2,10 +2,42 @@ body {
     margin: 0;
     height: 100vh;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(135deg, #0f2027, #170e29, #19002b);
+    background: linear-gradient(135deg, #0f2027, #0b0714, #19002b);
     font-family: 'Ubuntu', sans-serif;
+}
+
+.navbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding-top: 18px;
+    padding-bottom: 18px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    background: rgba(0, 0, 0, 0.101);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.393);
+}
+
+.navbar a {
+    font-family: "Ubuntu", sans-serif;
+    text-decoration: none;
+    color: #ddd;
+    font-size: 16px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: 0.25s;
+}
+
+.nav-right a:hover {
+    color: white;
 }
 
 .startButton {
@@ -49,6 +81,7 @@ body {
 }
 
 .footer {
+    font-family: "Roboto", sans-serif;
     position: absolute;
     bottom: 60px;
     width: 100%;

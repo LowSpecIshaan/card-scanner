@@ -5,11 +5,25 @@
     <title>Visiting Card Scanner</title>
     <link rel="icon" href="{{ url_for('static', filename='images/IshaanLogo.png') }}" type="image/png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+    <nav class="navbar">
+        <div class="nav-left">
+            <a>
+                {% if current_user.company_name %}
+                    {{ current_user.company_name[:18] }}
+                {% endif %}
+            <a>
+        </div>
+
+        <div class="nav-right">
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
     <div class="startButton">
         <h1>Business Card Scanner</h1>
         <a href="/scan">

@@ -28,13 +28,15 @@ function login() {
 
 function togglePassword() {
     const input = document.getElementById("password");
-    const button = event.target;
+    const eye = document.getElementById("eyeIcon");
 
     if (input.type === "password") {
         input.type = "text";
-        button.innerText = "Hide Password";
+        eye.classList.remove("fa-eye");
+        eye.classList.add("fa-eye-slash");
     } else {
         input.type = "password";
-        button.innerText = "Show Password";
+        eye.classList.remove("fa-eye-slash");
+        eye.classList.add("fa-eye");
     }
 }

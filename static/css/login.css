@@ -4,7 +4,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(135deg, #0f2027, #170e29, #19002b);
+    background: linear-gradient(135deg, #0f2027, #0b0714, #19002b);
     font-family: 'Ubuntu', sans-serif;
 }
 
@@ -83,6 +83,35 @@ input:focus {
     transform: translate(0, -3px);
 }
 
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.eye-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #aaa;
+    font-size: 18px;
+    transition: 0.2s;
+}
+
+.eye-icon:hover {
+    color: white;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px rgba(32, 32, 32, 0.592) inset !important;
+    -webkit-text-fill-color: white !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
 .footer {
     position: absolute;
     bottom: 60px;
@@ -91,6 +120,7 @@ input:focus {
     color: #aaa;
     font-size: 14px;
     letter-spacing: 0.5px;
+    font-family: "Roboto", sans-serif;
 }
 
 .footer a {
