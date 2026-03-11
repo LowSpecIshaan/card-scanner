@@ -14,7 +14,6 @@ function login() {
         .then(response => response.json())
         .then(data => {
             if (data.status === "logged_in") {
-                alert("Logged in successfully!")
                 window.location.href = "/";
             } else {
                 alert("Invalid Credentials");
