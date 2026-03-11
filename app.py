@@ -48,7 +48,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return {"status": "logged_out"}, 200
+    return redirect("/login")
 
 # Initialize DB
 db.init_app(app)
@@ -268,6 +268,8 @@ def edit_page(id):
 @app.route("/admin/create-user")
 @login_required
 def create_user_page():
+    if not current_user.is_admin:
+        return redirect("/")
     return render_template("create-user.html")
 
 # API Routes
@@ -428,6 +430,9 @@ def delete_lead(id):
 @app.route("/api/admin/create-user", methods=["POST"])
 @login_required
 def create_user():
+    if not current_user.is_admin:
+        return {"error": "Access Denied"}, 403
+
     data = request.get_json()
     password = data.get("password")
 
