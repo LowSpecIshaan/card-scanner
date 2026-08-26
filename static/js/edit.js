@@ -11,6 +11,7 @@ fetch(`/api/get/${id}`)
         document.getElementById("email").value = data.email || "";
         document.getElementById("address").value = data.address || "";
         document.getElementById("website").value = data.website || "";
+        document.getElementById("exhibition").value = data.exhibition_id;
 
         const dropdown = document.getElementById("customerType");
 
@@ -68,7 +69,8 @@ function save() {
         email: document.getElementById("email").value,
         address: document.getElementById("address").value,
         website: document.getElementById("website").value,
-        remarks: document.getElementById("remarks").value
+        remarks: document.getElementById("remarks").value,
+        exhibition_id: document.getElementById("exhibition").value,
     };
 
     fetch(`/api/update/${id}`, {

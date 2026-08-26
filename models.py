@@ -21,10 +21,34 @@ def generate_id(length=8):
 def ist():
     return datetime.utcnow() + timedelta(hours=5, minutes=30)
 
+class Exhibition(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id'),
+        nullable=False
+    )
+
+    user = db.relationship(
+        'User',
+        foreign_keys=[user_id],
+        backref='exhibitions'
+    )
+
 class Lead(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    exhibition_id = db.Column(
+        db.Integer,
+        db.ForeignKey('exhibition.id'),
+        nullable=False
+    )
+
+    exhibition = db.relationship('Exhibition', backref='leads')
 
     name = db.Column(db.String(150), nullable=False)
     phone = db.Column(db.String(20))
@@ -51,6 +75,17 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(200), nullable=False)
     company_name = db.Column(db.String(100), nullable=True)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
+
+    current_exhibition_id = db.Column(
+        db.Integer,
+        db.ForeignKey('exhibition.id'),
+        nullable=True
+    )
+
+    current_exhibition = db.relationship(
+        'Exhibition',
+        foreign_keys=[current_exhibition_id]
+    )
 
     def set_password(self, raw_password):
         self.password = generate_password_hash(raw_password)

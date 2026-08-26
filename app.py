@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, send_file
+from flask import Flask, render_template, request, jsonify, redirect, send_file, current_app
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import io
 from flask_sqlalchemy import SQLAlchemy
@@ -7,8 +7,17 @@ from dotenv import load_dotenv
 from google.cloud import vision_v1
 import uuid
 import re
-from models import db, Lead, User
+from models import db, Lead, User, Exhibition
 import pandas as pd
+from google import genai
+from google.genai import types
+from pydantic import BaseModel
+import json
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime, timedelta
+from threading import Thread
 
 load_dotenv()
 
@@ -22,6 +31,61 @@ login_manager.login_view = "login_page"
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+#Gemini
+gemini_client = genai.Client()
+
+def extract_business_card_with_gemini(image_bytes):
+    response = gemini_client.models.generate_content(
+        model="gemini-3.1-flash-lite",
+        contents=[
+            types.Part.from_bytes(
+                data=image_bytes,
+                mime_type="image/jpeg"
+            ),
+            """
+            Extract the information from this business card.
+
+            Return:
+            - name
+            - phone
+            - phone2
+            - email
+            - designation
+            - company
+            - website
+            - address
+            - customer_type
+
+            Rules:
+            - Only use information present on the card.
+            - Do not invent missing information.
+            - Return an empty string if a field is unavailable.
+            - Format phone numbers as +<country_code><space><number>. (no space or bracket or hifen in between the phone number)
+            - Correct obvious OCR/reading errors when the intended value is clear.
+            - If multiple phone numbers exist, put the primary number in phone
+              and the second number in phone2.
+            """
+        ],
+        config={
+            "response_mime_type": "application/json"
+        }
+    )
+
+    return json.loads(response.text)
+
+# Clean Text
+def clean_data(data):
+    if data.get("email"):
+        data["email"] = data["email"].strip().lower()
+
+    if data.get("website"):
+        data["website"] = data["website"].strip().lower()
+
+    if data.get("name"):
+        data["name"] = data["name"].strip().title()
+
+    return data
 
 # Auth
 @login_manager.user_loader
@@ -50,199 +114,342 @@ def logout():
     logout_user()
     return redirect("/login")
 
+# Email
+def send_followup_email(lead):
+    sender = os.environ.get("MAIL_USERNAME")
+    password = os.environ.get("MAIL_PASSWORD")
+
+    # Get user explicitly using lead.user_id
+    user = db.session.get(User, lead.user_id)
+    company_name = user.company_name if user and user.company_name else "Our Team"
+
+    msg = MIMEMultipart("alternative")
+
+    msg["From"] = sender
+    msg["To"] = lead.email
+    msg["Subject"] = f"{lead.name}, thank you for connecting at {lead.exhibition.name}"
+
+    # Plain-text fallback
+    body = f"""
+Hi {lead.name},
+
+It was great meeting you at {lead.exhibition.name}!
+
+Kindly share your requirements with us, and we would be happy to assist you.
+
+Regards,
+{company_name}
+"""
+
+    msg.attach(MIMEText(body, "plain"))
+
+    # HTML version
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <body style="
+        margin:0;
+        padding:30px 15px;
+        background:#f5f7fa;
+        font-family:Arial, Helvetica, sans-serif;
+    ">
+
+    <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+    <td align="center">
+
+    <table width="600" cellpadding="0" cellspacing="0"
+        style="
+            max-width:600px;
+            width:100%;
+            background:#ffffff;
+            border-radius:10px;
+            padding:40px;
+            box-shadow:0 2px 12px rgba(0,0,0,0.08);
+        ">
+
+    <tr>
+    <td>
+
+    <h2 style="
+        margin:0 0 25px;
+        color:#222;
+        font-size:22px;
+    ">
+        Hi {lead.name},
+    </h2>
+
+    <p style="
+        color:#444;
+        font-size:16px;
+        line-height:1.7;
+        margin:0 0 18px;
+    ">
+        It was great connecting with you at
+        <strong>{lead.exhibition.name}</strong>!
+    </p>
+
+    <p style="
+        color:#444;
+        font-size:16px;
+        line-height:1.7;
+        margin:0 0 28px;
+    ">
+        Kindly share your requirements with us, and we would be
+        happy to assist you.
+    </p>
+
+    <p style="
+        color:#444;
+        font-size:16px;
+        line-height:1.6;
+        margin:0;
+    ">
+        Regards,<br>
+        <strong>{company_name}</strong>
+    </p>
+
+    </td>
+    </tr>
+
+    </table>
+
+    </td>
+    </tr>
+    </table>
+
+    </body>
+    </html>
+    """
+
+    msg.attach(MIMEText(html, "html"))
+
+    # Send
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(sender, password)
+        server.send_message(msg)
+
+    print(f"Email sent successfully to {lead.email}")
+
+
+def send_email_background(lead_id, app):
+    with app.app_context():
+        try:
+            lead = db.session.get(Lead, lead_id)
+
+            if not lead:
+                print(f"BACKGROUND EMAIL ERROR: Lead {lead_id} not found")
+                return
+
+            send_followup_email(lead)
+
+        except Exception as e:
+            print("BACKGROUND EMAIL ERROR:", repr(e))
+
+        finally:
+            db.session.remove()
+
 # Initialize DB
 db.init_app(app)
 
 # Google API
-import json
-from google.oauth2 import service_account
+# import json
+# from google.oauth2 import service_account
 
-credentials_info = json.loads(os.environ.get("GOOGLE_CREDENTIALS_JSON"))
-credentials = service_account.Credentials.from_service_account_info(credentials_info)
+# credentials_info = json.loads(os.environ.get("GOOGLE_CREDENTIALS_JSON"))
+# credentials = service_account.Credentials.from_service_account_info(credentials_info)
 
-client = vision_v1.ImageAnnotatorClient(
-    credentials=credentials,
-    transport="rest"
-)
+# client = vision_v1.ImageAnnotatorClient(
+#     credentials=credentials,
+#     transport="rest"
+# )
 
 # Image text Extraction
-def extract_text_from_image(image_bytes):
-    image = vision_v1.Image(content=image_bytes)
-    response = client.document_text_detection(
-        image=image,
-        timeout=20
-    )
+# def extract_text_from_image(image_bytes):
+#     image = vision_v1.Image(content=image_bytes)
+#     response = client.document_text_detection(
+#         image=image,
+#         timeout=20
+#     )
 
-    if response.error.message:
-        raise Exception(response.error.message)
+#     if response.error.message:
+#         raise Exception(response.error.message)
 
-    if not response.text_annotations:
-        return ""
+#     if not response.text_annotations:
+#         return ""
 
-    return response.text_annotations[0].description
+#     return response.text_annotations[0].description
 
 # Image text parsing
-designation_keywords = [
-    "manager", "owner", "ceo", "cto", "cfo", "founder",
-    "director", "head", "designer", "advisor", "consultant",
-    "engineer", "developer", "analyst", "marketing",
-    "sales", "executive", "president", "lead", "specialist",
-    "architect", "officer", "administrator", "advocate", "lawyer", "senior", "surgeon", "accountant"
-]
+# designation_keywords = [
+#     "manager", "owner", "ceo", "cto", "cfo", "founder",
+#     "director", "head", "designer", "advisor", "consultant",
+#     "engineer", "developer", "analyst", "marketing",
+#     "sales", "executive", "president", "lead", "specialist",
+#     "architect", "officer", "administrator", "advocate", "lawyer", "senior", "surgeon", "accountant"
+# ]
 
-company_keywords = [
-    "technologies", "solutions", "systems",
-    "pvt", "ltd", "private", "limited", "corp",
-    "corporation", "inc", "llp", "group",
-    "industries", "services", "consulting", "llc", "india",
-    "doors", "wood", "enterprise", "sons", "lab", 
-    "decor", "kitchen", "hardware", "decorators", "l&c", "studio", "designers", 
-    "interior", "company", "co", "associates", "agency", "traders", "exports", "imports",
-    "builders", "construction", "family", "media", "digital",
-    "engineering", "enterprises", "global", "international", "transport", "designs", "rubber", "polymer",
-    "furniture", "plastic", "silicon", "steel", "paper", "polymer", "silk", "agencies", "media", "ware", 
-    "ceramics", "industry", "insurance", "bharat"
-]
+# company_keywords = [
+#     "technologies", "solutions", "systems",
+#     "pvt", "ltd", "private", "limited", "corp",
+#     "corporation", "inc", "llp", "group",
+#     "industries", "services", "consulting", "llc", "india",
+#     "doors", "wood", "enterprise", "sons", "lab", 
+#     "decor", "kitchen", "hardware", "decorators", "l&c", "studio", "designers", 
+#     "interior", "company", "co", "associates", "agency", "traders", "exports", "imports",
+#     "builders", "construction", "family", "media", "digital",
+#     "engineering", "enterprises", "global", "international", "transport", "designs", "rubber", "polymer",
+#     "furniture", "plastic", "silicon", "steel", "paper", "polymer", "silk", "agencies", "media", "ware", 
+#     "ceramics", "industry", "insurance", "bharat"
+# ]
 
-def looks_like_initials_name(line):
-    line = line.strip()
+# def looks_like_initials_name(line):
+#     line = line.strip()
 
-    if re.match(r"^([A-Z]\.? ){1,3}[A-Z][a-z]+$", line):
-        return True
+#     if re.match(r"^([A-Z]\.? ){1,3}[A-Z][a-z]+$", line):
+#         return True
 
-    if re.match(r"^[A-Z]{2,}\s[A-Z]{2,}$", line):
-        return True
+#     if re.match(r"^[A-Z]{2,}\s[A-Z]{2,}$", line):
+#         return True
 
-    return False
+#     return False
 
-def extract_entities(text):
-    lines = [l.strip() for l in text.split("\n") if l.strip()]
+# def extract_entities(text):
+#     lines = [l.strip() for l in text.split("\n") if l.strip()]
 
-    clean_lines = []
-    for line in lines:
-        lower = line.lower()
+#     clean_lines = []
+#     for line in lines:
+#         lower = line.lower()
 
-        if (
-            "@" in line
-            or re.search(r"\+?\d[\d\s\-().]{7,}\d", line)
-            or "," in line
-            or re.search(r"(?:https?://)?(?:www\.)?[A-Za-z0-9-]+\.[A-Za-z]{2,}(?:\.[A-Za-z]{2,})?", line)
-        ):  
-            continue
+#         if (
+#             "@" in line
+#             or re.search(r"\+?\d[\d\s\-().]{7,}\d", line)
+#             or "," in line
+#             or re.search(r"(?:https?://)?(?:www\.)?[A-Za-z0-9-]+\.[A-Za-z]{2,}(?:\.[A-Za-z]{2,})?", line)
+#         ):  
+#             continue
 
-        clean_lines.append(line)
+#         clean_lines.append(line)
 
-    name = ""
+#     name = ""
 
-    for line in clean_lines:
-        if (looks_like_initials_name(line)
-            and not any(k in line.lower() for k in company_keywords) 
-            and not any(k in line.lower() for k in designation_keywords)
-        ):
-            name = line.title()
-            break
+#     for line in clean_lines:
+#         if (looks_like_initials_name(line)
+#             and not any(k in line.lower() for k in company_keywords) 
+#             and not any(k in line.lower() for k in designation_keywords)
+#         ):
+#             name = line.title()
+#             break
 
-    if not name:
-        for line in clean_lines[:5]:
-            if (not any(k in line.lower() for k in company_keywords) 
-                and not any(k in line.lower() for k in designation_keywords)
-                and 2 <= len(line.split()) <= 3
-                and line.replace(" ", "").isalpha()
-            ):
-                name = line.title()
-                break
+#     if not name:
+#         for line in clean_lines[:5]:
+#             if (not any(k in line.lower() for k in company_keywords) 
+#                 and not any(k in line.lower() for k in designation_keywords)
+#                 and 2 <= len(line.split()) <= 3
+#                 and line.replace(" ", "").isalpha()
+#             ):
+#                 name = line.title()
+#                 break
 
-    company = ""
-    for line in clean_lines:
-        if any(keyword in line.lower() for keyword in company_keywords):
-            company = line.title()
-            break
+#     company = ""
+#     for line in clean_lines:
+#         if any(keyword in line.lower() for keyword in company_keywords):
+#             company = line.title()
+#             break
 
-    if not company:
-        for line in clean_lines:
-            if not any(k in line.lower() for k in designation_keywords) and 1 <= len(line.split()) <= 4 and line.title() != name:
-                company = line.title()
-                break
+#     if not company:
+#         for line in clean_lines:
+#             if not any(k in line.lower() for k in designation_keywords) and 1 <= len(line.split()) <= 4 and line.title() != name:
+#                 company = line.title()
+#                 break
 
-    return name, company
+#     return name, company
 
-def parse_business_card(text):
-    lines = [l.strip() for l in text.split("\n") if l.strip()]
+# def parse_business_card(text):
+#     lines = [l.strip() for l in text.split("\n") if l.strip()]
 
-    name, company = extract_entities(text)
+#     name, company = extract_entities(text)
 
-    email = re.findall(
-        r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
-        text
-    )
+#     email = re.findall(
+#         r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
+#         text
+#     )
 
-    phone_candidates = []
+#     phone_candidates = []
 
-    for line in text.split("\n"):
-        match = re.search(r"\+?\d[\d\s\-().]{7,}\d", line)
-        if match:
-            phone_candidates.append(match.group())
+#     for line in text.split("\n"):
+#         match = re.search(r"\+?\d[\d\s\-().]{7,}\d", line)
+#         if match:
+#             phone_candidates.append(match.group())
 
-    phones = [
-        re.sub(r"[^\d+]", "", p)
-        for p in phone_candidates
-    ]
+#     phones = [
+#         re.sub(r"[^\d+]", "", p)
+#         for p in phone_candidates
+#     ]
 
-    phone = phones[0] if phones else ""
-    phone2 = phones[1] if len(phones) > 1 else ""
+#     phone = phones[0] if phones else ""
+#     phone2 = phones[1] if len(phones) > 1 else ""
 
-    clean_text = text
-    for e in email:
-        clean_text = clean_text.replace(e, "")
+#     clean_text = text
+#     for e in email:
+#         clean_text = clean_text.replace(e, "")
 
-    website = re.findall(
-        r"(?:https?://)?(?:www\.)?[A-Za-z0-9-]+\.[A-Za-z]{2,}(?:\.[A-Za-z]{2,})?",
-        clean_text
-    )
+#     website = re.findall(
+#         r"(?:https?://)?(?:www\.)?[A-Za-z0-9-]+\.[A-Za-z]{2,}(?:\.[A-Za-z]{2,})?",
+#         clean_text
+#     )
 
-    website = [
-        w for w in website
-        if "@" not in w and " " not in w
-    ]
+#     website = [
+#         w for w in website
+#         if "@" not in w and " " not in w
+#     ]
 
-    designation = ""
+#     designation = ""
 
-    for line in lines:
-        lower_line = line.lower()
+#     for line in lines:
+#         lower_line = line.lower()
 
-        if (
-            line != name
-            and not re.search(r"\d", line)
-            and any(keyword in lower_line for keyword in designation_keywords)
-        ):
-            designation = line
-            break
+#         if (
+#             line != name
+#             and not re.search(r"\d", line)
+#             and any(keyword in lower_line for keyword in designation_keywords)
+#         ):
+#             designation = line
+#             break
 
-    address = []
-    for line in lines:
-        if "," in line and len(line) > 15:
-            address.append(line)
+#     address = []
+#     for line in lines:
+#         if "," in line and len(line) > 15:
+#             address.append(line)
 
-    address = " ".join(address)
+#     address = " ".join(address)
 
-    return_dict = {
-        "name": name,
-        "company": company,
-        "designation": designation,
-        "email": email[0].lower() if email else "",
-        "phone": phone,
-        "phone2": phone2,
-        "website": website[0].lower() if website else "",
-        "address": address
-    }
+#     return_dict = {
+#         "name": name,
+#         "company": company,
+#         "designation": designation,
+#         "email": email[0].lower() if email else "",
+#         "phone": phone,
+#         "phone2": phone2,
+#         "website": website[0].lower() if website else "",
+#         "address": address
+#     }
 
-    return return_dict
+#     return return_dict
 
 # Frontend Routes
 @app.route('/')
 @login_required
 def home():
-    return render_template("index.html")
+    exhibitions = Exhibition.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Exhibition.name).all()
+
+    return render_template(
+        "index.html",
+        exhibitions=exhibitions
+    )
 
 @app.route('/scan')
 @login_required
@@ -257,13 +464,53 @@ def form_page():
 @app.route("/leads")
 @login_required
 def view_leads():
-    leads = Lead.query.filter_by(is_deleted = False, user_id=current_user.id).order_by(Lead.created_at.asc()).all()
-    return render_template("leads.html", leads=leads)
+    exhibition_id = request.args.get("exhibition_id", type=int)
+
+    query = Lead.query.filter_by(
+        is_deleted=False,
+        user_id=current_user.id
+    )
+
+    if exhibition_id:
+        query = query.filter_by(exhibition_id=exhibition_id)
+
+    leads = query.order_by(Lead.created_at.asc()).all()
+
+    exhibitions = Exhibition.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Exhibition.name).all()
+
+    return render_template(
+        "leads.html",
+        leads=leads,
+        exhibitions=exhibitions,
+        selected_exhibition_id=exhibition_id
+    )
+
+@app.route("/exhibitions")
+@login_required
+def view_exhibitions():
+    exhibitions = Exhibition.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Exhibition.name).all()
+
+    return render_template(
+        "exhibitions.html",
+        exhibitions=exhibitions
+    )
 
 @app.route("/edit/<int:id>")
 @login_required
 def edit_page(id):
-    return render_template("edit.html", id=id)
+    exhibitions = Exhibition.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Exhibition.name).all()
+
+    return render_template(
+        "edit.html",
+        id=id,
+        exhibitions=exhibitions
+    )
 
 @app.route("/admin/create-user")
 @login_required
@@ -283,9 +530,13 @@ def scan_card():
 
     try:
         image_bytes = image.read()
-        text = extract_text_from_image(image_bytes)
 
-        parsed = parse_business_card(text)
+        # text = extract_text_from_image(image_bytes)
+
+        # parsed = extract_business_card_with_gemini(text)
+        
+        parsed = extract_business_card_with_gemini(image_bytes)
+        parsed = clean_data(parsed)
 
         return jsonify({
             "status": "success",
@@ -304,10 +555,17 @@ def scan_card():
 def save():
     data = request.get_json()
 
+    mail_timing = data.get("mail_timing", "none")
+
+    app = current_app._get_current_object()
+
     if not data:
         return {"error": "Bad request"}, 400
 
-    existing = Lead.query.filter_by(email=data.get("email"), user_id=current_user.id).first()
+    if not current_user.current_exhibition_id:
+        return {"error": "Please select an exhibition first"}, 400
+
+    existing = Lead.query.filter_by(email=data.get("email"), user_id=current_user.id, exhibition_id=current_user.current_exhibition_id).first()
     if existing:
         if existing.is_deleted==False:
             return {"error": "Email already exists"}, 400
@@ -324,6 +582,14 @@ def save():
             existing.remarks = data.get("remarks")
 
             db.session.commit()
+
+            if mail_timing == "now":
+                Thread(
+                    target=send_email_background,
+                    args=(existing.id, app),
+                    daemon=True
+                ).start()
+
             return {"status": "saved"}, 200
     
     lead = Lead(
@@ -338,10 +604,18 @@ def save():
         address=data.get("address"),
         remarks=data.get("remarks"),
         user_id=current_user.id,
+        exhibition_id=current_user.current_exhibition_id,
     )
 
     db.session.add(lead)
     db.session.commit()
+
+    if mail_timing == "now":
+        Thread(
+            target=send_email_background,
+            args=(lead.id, app),
+            daemon=True
+        ).start()
 
     return {"status": "saved"}, 200
 
@@ -360,6 +634,7 @@ def get_lead(id):
         "website": lead.website,
         "address": lead.address,
         "remarks": lead.remarks,
+        "exhibition_id": lead.exhibition_id
     })
 
 @app.route("/api/update/<int:id>", methods=["PUT"])
@@ -369,6 +644,7 @@ def update_lead(id):
 
     lead = Lead.query.filter_by(id=id, user_id=current_user.id).first_or_404()
 
+    lead.exhibition = data.get("exhibition")
     lead.name = data.get("name")
     lead.phone = data.get("phone")
     lead.phone2 = data.get("phone2")
@@ -384,14 +660,103 @@ def update_lead(id):
 
     return {"status": "saved"}, 200
 
+@app.route("/api/add-exhibition", methods=["POST"])
+@login_required
+def add_exhibition():
+    data = request.get_json()
+
+    name = data.get("name", "").strip()
+
+    if not name:
+        return jsonify({"error": "Exhibition name cannot be empty."}), 400
+
+    existing = Exhibition.query.filter_by(
+        user_id=current_user.id,
+        name=name
+    ).first()
+
+    if existing:
+        return jsonify({"error": "An exhibition with this name already exists."}), 400
+
+    exhibition = Exhibition(
+        name=name,
+        user_id=current_user.id
+    )
+
+    db.session.add(exhibition)
+    db.session.commit()
+
+    return jsonify({"success": True})
+
+@app.route("/api/change-exhibition", methods=["POST"])
+@login_required
+def change_exhibition():
+    exhibition_id = request.form.get("exhibition_id", type=int)
+
+    if not exhibition_id:
+        return redirect("/")
+
+    exhibition = Exhibition.query.filter_by(
+        id=exhibition_id,
+        user_id=current_user.id
+    ).first()
+
+    if not exhibition:
+        return redirect("/")
+
+    current_user.current_exhibition_id = exhibition.id
+    db.session.commit()
+
+    return redirect("/")
+
+@app.route("/api/edit-exhibition/<int:id>", methods=["POST"])
+@login_required
+def edit_exhibition(id):
+    exhibition = Exhibition.query.filter_by(
+        id=id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    data = request.get_json()
+
+    new_name = data.get("name", "").strip()
+
+    if not new_name:
+        return jsonify({"error": "Name required"}), 400
+
+    existing = Exhibition.query.filter(
+        Exhibition.user_id == current_user.id,
+        Exhibition.name == new_name,
+        Exhibition.id != exhibition.id
+    ).first()
+
+    if existing:
+        return jsonify({"error": "Exhibition already exists"}), 400
+
+    exhibition.name = new_name
+    db.session.commit()
+
+    return jsonify({"success": True})
+
 @app.route("/api/to-excel")
 @login_required
 def excel():
-    leads = Lead.query.filter_by(is_deleted=False, user_id=current_user.id).all()
+    exhibition_id = request.args.get('exhibition_id', type=int)
+
+    query = Lead.query.filter_by(
+        user_id=current_user.id,
+        is_deleted=False
+    )
+
+    if exhibition_id:
+        query = query.filter_by(exhibition_id=exhibition_id)
+
+    leads = query.all()
     data_list = []
 
     for lead in leads:
         dic = {
+            "exhibition":lead.exhibition.name,
             "name": lead.name,
             "phone": lead.phone,
             "phone2": lead.phone2,
@@ -454,6 +819,6 @@ def robots():
 
 # Run App
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-    app.run()
+    # with app.app_context():
+    #     db.create_all()
+    app.run(debug=True, host = '0.0.0.0')
