@@ -1,0 +1,132 @@
+body {
+    color: white;
+    padding: 20px;
+    margin: 0;
+    background: linear-gradient(135deg, #0f2027, #0b0714, #19002b);
+    font-family: "Ubuntu", sans-serif;
+    min-height: 100vh;
+}
+
+h1 {
+    text-align: center;
+    font-size: 40px;
+    margin-bottom: 25px;
+}
+
+.table-container {
+    width: 100%;
+    max-width: 900px;
+    margin: auto;
+    overflow-x: auto;
+
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,.2);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 14px;
+    border: 1px solid #333;
+    text-align: left;
+}
+
+thead th {
+    background: #131313;
+    position: sticky;
+    top: 0;
+}
+
+tr:nth-child(odd) {
+    background: rgba(255,255,255,.03);
+}
+
+tr:nth-child(even) {
+    background: rgba(255,255,255,.08);
+}
+
+.edit-btn,
+.delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: 14px;
+}
+
+.edit-btn {
+    color: #59c5ff;
+}
+
+.delete-btn {
+    color: #ff7b7b;
+}
+
+.button-container {
+    width: 100%;
+    max-width: 250px;
+    margin: 35px auto;
+
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.button-container a {
+    width: 100%;
+}
+
+.button-container button {
+    width: 100%;
+    padding: 12px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: white;
+
+    font-family: "Rubik", sans-serif;
+    font-size: 20px;
+
+    cursor: pointer;
+    transition: .3s;
+}
+
+.button-container button:hover {
+    transform: translateY(-2px);
+}
+
+.table-container::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.4);
+    border-radius: 10px;
+}
+
+@media (max-width:768px){
+
+    body{
+        padding:10px;
+    }
+
+    h1{
+        font-size:34px;
+    }
+
+    th,
+    td{
+        font-size:13px;
+        padding:10px;
+    }
+
+    .button-container button{
+        font-size:16px;
+    }
+}

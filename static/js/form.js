@@ -44,7 +44,8 @@ function save() {
         email: document.getElementById("email").value,
         address: document.getElementById("address").value,
         website: document.getElementById("website").value,
-        remarks: document.getElementById("remarks").value
+        remarks: document.getElementById("remarks").value,
+        mail_timing: document.getElementById("mailTiming").value
     };
 
     fetch("/api/save", {
