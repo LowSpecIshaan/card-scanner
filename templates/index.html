@@ -20,7 +20,7 @@
                     &nbsp;
                     {{ current_user.company_name[:18] }}
                 {% endif %}
-            <a>
+            </a>
         </div>
 
         <div class="nav-right">
@@ -29,6 +29,19 @@
     </nav>
     <div class="startButton">
         <h1>Business Card Scanner</h1>
+        <form method="POST" action="/change-exhibition" class="exhibition-form">
+            <select name="exhibition_id" onchange="this.form.submit()">
+                {% for exhibition in exhibitions %}
+                    <option value="{{ exhibition.id }}"
+                        {% if exhibition.id == current_user.current_exhibition_id %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ exhibition.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
         <a href="/scan">
             <button>Start Scan</button>
         </a>
@@ -37,6 +50,9 @@
         </a>
         <a href="/leads">
             <button style="margin-top: 20px">View Leads</button>
+        </a>
+        <a href="/exhibitions">
+            <button style="margin-top: 20px">View Exhibitions</button>
         </a>
     </div>
 

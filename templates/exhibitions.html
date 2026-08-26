@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exhibitions</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/IshaanLogo.png') }}" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/exhibitions.css') }}">
+</head>
+<body>
+
+    <h1>Exhibitions</h1>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>S.No</th>
+                    <th>Exhibition Name</th>
+                    <th>Leads</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for exhibition in exhibitions %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ exhibition.name }}</td>
+                    <td>{{ exhibition.leads|length }}</td>
+                    <td>
+                        <button
+                            class="edit-btn"
+                            onclick="edit('{{ exhibition.id }}')">
+                            Edit
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="button-container">
+        <a>
+            <button onclick="addExhibition()">Add Exhibition</button>
+        </a>
+
+        <a href="/">
+            <button>Home</button>
+        </a>
+    </div>
+    <script>
+    function edit(id, currentName) {
+        const newName = prompt("Enter new exhibition name:", currentName);
+
+        if (newName === null) return;
+
+        if (newName.trim() === "") {
+            alert("Exhibition name cannot be empty.");
+            return;
+        }
+
+        fetch(`/api/edit-exhibition/${id}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                name: newName.trim()
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert("Failed to update exhibition.");
+            }
+        });
+    }
+
+    function addExhibition() {
+        const name = prompt("Enter exhibition name:");
+
+        if (name === null) return;
+
+        if (name.trim() === "") {
+            alert("Exhibition name cannot be empty.");
+            return;
+        }
+
+        fetch("/api/add-exhibition", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                name: name.trim()
+            })
+        })
+        .then(async response => {
+            const data = await response.json();
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert(data.error);
+            }
+        });
+    }
+    </script>
+</body>
+</html>

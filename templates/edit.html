@@ -14,6 +14,16 @@
 
     <form id="leadForm" onSubmit="save(); return false;">
         <div class="form-group">
+            <small>Exhibition*</small>
+            <select id="exhibition" class="dropdown" required>
+                {% for exhibition in exhibitions %}
+                    <option value="{{ exhibition.id }}">
+                        {{ exhibition.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
             <small>Name*</small>
             <input type="text" id="name" required placeholder="Please Fill Manually">
         </div>
