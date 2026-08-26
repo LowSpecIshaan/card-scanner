@@ -29,7 +29,7 @@
     </nav>
     <div class="startButton">
         <h1>Business Card Scanner</h1>
-        <form method="POST" action="/change-exhibition" class="exhibition-form">
+        <form method="POST" action="/api/change-exhibition" class="exhibition-form">
             <select name="exhibition_id" onchange="this.form.submit()">
                 {% for exhibition in exhibitions %}
                     <option value="{{ exhibition.id }}"
