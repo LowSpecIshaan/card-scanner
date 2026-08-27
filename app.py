@@ -13,9 +13,11 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel
 import json
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from brevo import Brevo
+from brevo.transactional_emails import (
+    SendTransacEmailRequestSender,
+    SendTransacEmailRequestToItem,
+)
 from datetime import datetime, timedelta
 from threading import Thread
 
@@ -115,35 +117,18 @@ def logout():
     return redirect("/login")
 
 # Email
-def send_followup_email(lead):
-    sender = os.environ.get("MAIL_USERNAME")
-    password = os.environ.get("MAIL_PASSWORD")
 
-    # Get user explicitly using lead.user_id
+brevo_client = Brevo(
+    api_key=os.environ.get("BREVO_API_KEY")
+)
+
+def send_followup_email(lead):
+    sender_email = os.environ.get("BREVO_SENDER_EMAIL")
+    sender_name = os.environ.get("BREVO_SENDER_NAME", "Your Company")
+
     user = db.session.get(User, lead.user_id)
     company_name = user.company_name if user and user.company_name else "Our Team"
 
-    msg = MIMEMultipart("alternative")
-
-    msg["From"] = sender
-    msg["To"] = lead.email
-    msg["Subject"] = f"{lead.name}, thank you for connecting at {lead.exhibition.name}"
-
-    # Plain-text fallback
-    body = f"""
-Hi {lead.name},
-
-It was great meeting you at {lead.exhibition.name}!
-
-Kindly share your requirements with us, and we would be happy to assist you.
-
-Regards,
-{company_name}
-"""
-
-    msg.attach(MIMEText(body, "plain"))
-
-    # HTML version
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -165,7 +150,6 @@ Regards,
             background:#ffffff;
             border-radius:10px;
             padding:40px;
-            box-shadow:0 2px 12px rgba(0,0,0,0.08);
         ">
 
     <tr>
@@ -206,7 +190,7 @@ Regards,
         margin:0;
     ">
         Regards,<br>
-        <strong>{company_name}</strong>
+        <strong>{company_name or "Our Team"}</strong>
     </p>
 
     </td>
@@ -222,15 +206,25 @@ Regards,
     </html>
     """
 
-    msg.attach(MIMEText(html, "html"))
+    result = brevo_client.transactional_emails.send_transac_email(
+        subject=f"{lead.name}, thank you for connecting at {lead.exhibition.name}",
 
-    # Send
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login(sender, password)
-        server.send_message(msg)
+        html_content=html,
 
-    print(f"Email sent successfully to {lead.email}")
+        sender=SendTransacEmailRequestSender(
+            name=sender_name,
+            email=sender_email
+        ),
+
+        to=[
+            SendTransacEmailRequestToItem(
+                email=lead.email,
+                name=lead.name
+            )
+        ]
+    )
+
+    print("EMAIL SENT:", result.message_id)
 
 
 def send_email_background(lead_id, app):
@@ -819,6 +813,6 @@ def robots():
 
 # Run App
 if __name__ == "__main__":
-    # with app.app_context():
-    #     db.create_all()
-    app.run(debug=True, host = '0.0.0.0')
+    with app.app_context():
+        db.create_all()
+    app.run(debug=False, host = '0.0.0.0')
